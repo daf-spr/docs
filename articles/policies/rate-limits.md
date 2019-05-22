@@ -196,7 +196,13 @@ The following Auth0 Management API endpoints return rate limit-related headers. 
 
 ### Authentication API
 
-The following Auth0 Authentication API endpoints return rate limit-related headers.
+The rate limits for this API differ depending on whether your tenant is free or paid.
+
+::: note
+For all __free tenants__, Authentication API usage is restricted to 300 requests per minute. Note that the limit is set by tenant and not by endpoint.
+
+The tenants that have no credit card associated in the [Dashboard](${manage_url}/#/tenant/billing/payment) are free except for tenants associated to an enterprise subscription.
+:::
 
 <table class="table">
   <thead>
@@ -210,10 +216,15 @@ The following Auth0 Authentication API endpoints return rate limit-related heade
   </thead>
   <tbody>
   <tr>
-    <td colspan="2">All endpoints</td>
+    <td colspan="2" rowspan="2">All endpoints</td>
     <td>(any request)</td>
     <td>Enterprise</td>
     <td>100 requests per second</td>
+  </tr>
+  <tr>
+    <td>(any request)</td>
+    <td>Free (*)</td>
+    <td>200 requests per minute</td>
   </tr>
   <tr>
     <td rowspan="3">Authentication and authorization</td>
