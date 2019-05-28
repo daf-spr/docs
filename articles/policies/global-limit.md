@@ -14,7 +14,7 @@ useCase:
 # Authentication API: Global Rate Limit Policy
 To ensure the quality of Auth0's services, the Authentication API is subject to several levels of rate limiting.
 
-This document describes the global rate limiting policy applicable to __free tenants__. Please visit [Rate limits](policies/rate-limits) for more information on other applicable limits.
+This document describes the global rate limiting policy applicable to __free tenants__. Please visit [Rate limits](/policies/rate-limits) for more information on other applicable limits.
 
 ## Limits
 For all __free tenants__, Authentication API usage is restricted to __300 requests per minute__.
@@ -22,7 +22,7 @@ For all __free tenants__, Authentication API usage is restricted to __300 reques
 It is important to consider that the limit is set globally by tenant and not by endpoint.
 
 ### Affected endpoints
-The global rate limit applies to all the [Authentication API](/api/authentication) endpoints, below you will find a complete list of endpoints that are affected by this limit and the associated response in case the rate limit is exceeded.
+The global rate limit applies to all the [Authentication API](/api/authentication) endpoints. Below you will find a complete list of endpoints that are affected by this limit and the associated response if you exceed the rate limit.
 
 Endpoint | Response
 ---------|---------
@@ -105,10 +105,10 @@ Endpoint | Response
 `GET /pb7/:clientID?` | Text: "Rate limit exceed"
 `GET /pem/:clientID?` | Text: "Rate limit exceed"
 `GET /rawpem/:clientID?` | Text: "Rate limit exceed"
-`GET /:tenant_ignored?/samlp/:clientID` | Text: "Rate limit exceed"
-`POST /:tenant_ignored?/samlp/:clientID` | Text: "Rate limit exceed"
-`GET /:tenant_ignored?/samlp/metadata` | Text: "Rate limit exceed"
-`GET /:tenant_ignored?/samlp/metadata/:clientID` | Text: "Rate limit exceed"
+`GET /samlp/:clientID` | Text: "Rate limit exceed"
+`POST /samlp/:clientID` | Text: "Rate limit exceed"
+`GET /samlp/metadata` | Text: "Rate limit exceed"
+`GET /samlp/metadata/:clientID` | Text: "Rate limit exceed"
 `GET /:clientID/trust/mex` | XML Error (`wst:RequestFailed`)
 `POST /:clientID/trust/usernamemixed` | XML Error (`wst:RequestFailed`, Status Code: 500)
 `GET /decision` | [Error Page](#error-page)
@@ -178,21 +178,29 @@ Endpoint | Response
 `GET /v2/logout` | [Error Page](#error-page)
 
 ## Exceeding the Rate Limit
-If you exceed the provided rate limit for a given API endpoint, you will receive a response with [HTTP Status Code 429 (Too Many Requests)](http://tools.ietf.org/html/rfc6585#section-4) except for the cases documented above. The response will also contain the [HTTP Response Headers](policies/rate-limits#http-response-headers) which you can refer to for more information on the rate limits applicable to that endpoint.
+If you exceed the rate limit for a given API endpoint, you'll receive an [HTTP 429 (Too Many Requests)](http://tools.ietf.org/html/rfc6585#section-4) response (except for the cases documented in the [section immediately above](#affected-endpoints). The response will also contain [HTTP Response Headers](policies/rate-limits#http-response-headers) that provide additional information on the rate limits applicable to that endpoint.
+
+For every hour that you exceed the global rate limit, Auth0 will write the following to your logs: **You have eached the global limit for your account**.
+
+You can search for the log entries using the [Dashboard](${manage_url}#/logs).
+
+### Reducing the number of calls to Auth0
+When you exceed your rate limits, you'll need to reduce the number of calls you make to Auth0. The specifics of hat you need to do depends on your use case, but here are some recommendations with which to begin:
+ * Cache `/.well-known/*` information: this information does not change frequently, so you can usually cache it to reduce the number of times you need to call Auth0
+ * Consider requesting an `id_token` instead of calling `/userinfo` to get information about the user
 
 ### Response body
-The response body depends on the endpoint and, in particular, the response the endpoint was meant to render originally. For example, if the response was meant to render JSON, then a JSON error response will be sent.
+The response body you receive depends on the endpoint itself, as well as the response the endpoint was meant to send originally. For example, if the original response expected was JSON, then a JSON error response will be sent if there are any issues (exceptions are documented above).
+
+The following sections provide additional information about the errors possible.
 
 The particular response per endpoint is stated in [Affected endpoints](#affected-endpoints) section, below you will find a description for each case.
 
 #### Error Page
-This response is sent for endpoints that render HTML content to the end user. When the rate limit is exceeded the [Error Page](https://auth0.com/docs/universal-login/custom-error-pages) will be rendered instead of the usual content.
+The Error Page response is sent for endpoints that render HTML content to the end user. When you exceed the rate limit, Auth0 renders the [Error Page](https://auth0.com/docs/universal-login/custom-error-pages) instead of the expected content.
 
 #### JSON Error
-JSON formatted response containing error code and description.
-The error code depends on the endpoint:
-* `access_denied`: for endpoints associated with OAuth
-* `too_many_requests`: for the rest of endpoints that return JSON.
+Endpoints that usually provide JSON-formatted responses will return a JSON object containing an error code and description.
 
 ```json
 {
@@ -202,11 +210,12 @@ The error code depends on the endpoint:
 }
 ```
 
+The error you receive depends on the type of endpoint you're calling:
+* `access_denied`: for endpoints associated with OAuth
+* `too_many_requests`: for the rest of endpoints that return JSON.
+
 #### XML Error
-This response is redered for endpoints that normally return XML.
-The error code depends on the endpoint:
-- `fed:BadRequest` will be sent for WSFED-related endpoints.
-- `wst:RequestFailed` will be used in for WSTrust-related endpoints.
+XML Errors are rendered for endpoints that normally return XML.
 
 ```xml
 <env:Envelope xmlns:env="http://www.w3.org/2003/05/soap-envelope" ...>
@@ -228,14 +237,6 @@ The error code depends on the endpoint:
 </env:Envelope>
 ```
 
-## FAQ
-
-#### How do I know if I have exceeded the rate limit?
-For every hour when the global rate limit is exceeded you will find a log with description: "You have reached the global limit for your account." written to your account logs.
-
-You can search for them from the [Dashboard](${manage_url}#/logs). If you see one of those logs it means you have exceeded the rate limit at least once.
-
-#### I am exceeding the rate limit. How can I reduce my call rate to Auth0?
-Whereas the exact answer depends on your use case, there are some common patterns you can follow in many cases to reduce the call rate:
-- Cache `/.well-known/*` information: this information does not change frequently, you can usually cache it to reduce call rate to Auth0.
-- If your use case allows it, consider requesting an `id_token` instead of calling `/userinfo` to get information about the user.
+The error you receive depends on the type of endpoint you're calling:
+- `fed:BadRequest` will be sent for WSFED-related endpoints.
+- `wst:RequestFailed` will be used in for WSTrust-related endpoints.
